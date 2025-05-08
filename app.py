@@ -1,43 +1,48 @@
 import streamlit as st
 from tensorflow.keras.models import load_model
-from keras.preprocessing.image import load_img, img_to_array
+from tensorflow.keras.preprocessing.image import load_img, img_to_array
 import numpy as np
+from PIL import Image
 import io
 
-# Cargar el modelo previamente entrenado
-model = load_model('serialized_model/images_clasifier.h5')
+# Carga el modelo entrenado
+@st.cache_resource
+def cargar_modelo():
+    return load_model("images_clasifier.h5")
 
-# Definir las clases (estos deben coincidir con las clases del modelo)
-class_names = ['Alicates', 'Cuchillo', 'Cúter', 'Destornillador', 'Martillo', 'Tijeras']
+model = cargar_modelo()
 
-# Función para realizar la predicción
-def predict_image(image):
-    # Cargar la imagen
-    img = load_img(image, target_size=(150, 150))
-    img_array = img_to_array(img) / 255.0  # Normalizar la imagen
-    img_array = np.expand_dims(img_array, axis=0)  # Agregar la dimensión de batch
-    
-    # Realizar la predicción
-    prediction = model.predict(img_array)
-    class_index = np.argmax(prediction[0])
-    
-    return class_names[class_index], float(np.max(prediction[0]))
+# Define las clases según tu modelo (ajústalas si son diferentes)
+class_names = ['alicate', 'cuchillo', 'cúter', 'destornillador', 'martillo', 'tijeras']
 
-# Interfaz de usuario con Streamlit
-st.title("Clasificador de Imágenes")
-st.write("Sube una imagen para clasificarla.")
+# Título de la app
+st.title("🔧 Clasificador de Herramientas")
 
-# Subir archivo de imagen
-uploaded_file = st.file_uploader("Elige una imagen", type=['jpg', 'jpeg', 'png'])
+# Sube una imagen
+uploaded_file = st.file_uploader("Sube una imagen (.jpg, .jpeg, .png)", type=["jpg", "jpeg", "png"])
 
+# Procesar y predecir
 if uploaded_file is not None:
-    # Mostrar la imagen subida
-    st.image(uploaded_file, caption="Imagen subida", use_column_width=True)
-    
-    # Realizar la predicción
-    with st.spinner('Clasificando...'):
-        class_name, confidence = predict_image(uploaded_file)
-    
-    # Mostrar la clase y la confianza
-    st.write(f"**Predicción:** {class_name}")
-    st.write(f"**Confianza:** {confidence:.2f}")
+    try:
+        # Muestra la imagen subida
+        image = Image.open(uploaded_file).convert("RGB")
+        st.image(image, caption="Imagen subida", use_column_width=True)
+
+        # Preprocesa la imagen
+        image = image.resize((150, 150))
+        img_array = img_to_array(image) / 255.0
+        img_array = np.expand_dims(img_array, axis=0)
+
+        # Predicción
+        predictions = model.predict(img_array)
+        predicted_index = np.argmax(predictions[0])
+        confidence = float(np.max(predictions[0]))
+
+        # Resultado
+        st.success(f"🔍 Predicción: **{class_names[predicted_index]}**")
+        st.info(f"📈 Confianza: {confidence:.2%}")
+
+    except Exception as e:
+        st.error(f"Error procesando la imagen: {e}")
+else:
+    st.warning("Por favor, sube una imagen para clasificar.")
