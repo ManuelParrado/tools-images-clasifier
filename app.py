@@ -4,55 +4,40 @@ from keras.preprocessing.image import load_img, img_to_array
 import numpy as np
 import io
 
-# Cargar el modelo preentrenado
-model = load_model('serialized_model/images_clasifier.h5')
+# Cargar el modelo previamente entrenado
+model = load_model('images_clasifier.h5')
 
-# Títulos y descripción de la app
-st.title("Clasificador de Imágenes")
-st.write("Esta es una aplicación simple para clasificar imágenes usando un modelo de TensorFlow.")
-st.write("Sube una imagen para predecir su clase.")
+# Definir las clases (estos deben coincidir con las clases del modelo)
+class_names = ['Alicates', 'Cuchillo', 'Cúter', 'Destornillador', 'Martillo', 'Tijeras']
 
-# Función para procesar la imagen y hacer la predicción
+# Función para realizar la predicción
 def predict_image(image):
-    try:
-        # Cargar imagen desde el stream de bytes
-        img = load_img(io.BytesIO(image.read()), target_size=(150, 150))
-        img_array = img_to_array(img) / 255.0  # Normalizar la imagen
-        img_array = np.expand_dims(img_array, axis=0)  # Añadir dimensión de batch
+    # Cargar la imagen
+    img = load_img(image, target_size=(150, 150))
+    img_array = img_to_array(img) / 255.0  # Normalizar la imagen
+    img_array = np.expand_dims(img_array, axis=0)  # Agregar la dimensión de batch
+    
+    # Realizar la predicción
+    prediction = model.predict(img_array)
+    class_index = np.argmax(prediction[0])
+    
+    return class_names[class_index], float(np.max(prediction[0]))
 
-        # Realizar la predicción
-        prediction = model.predict(img_array)
-        class_index = np.argmax(prediction[0])  # Clase con mayor probabilidad
-
-        # Nombres de las clases (ajusta esto según las clases de tu modelo)
-        class_names = ['Alicates', 'Cuchillo', 'Cúter', 'Destornillador', 'Martillo', 'Tijeras']
-
-        # Obtener la clase y confianza
-        predicted_class = class_names[class_index]
-        confidence = float(np.max(prediction[0]))
-
-        return predicted_class, confidence
-    except Exception as e:
-        st.error(f"Error al procesar la imagen: {str(e)}")
-        return None, None
+# Interfaz de usuario con Streamlit
+st.title("Clasificador de Imágenes")
+st.write("Sube una imagen para clasificarla.")
 
 # Subir archivo de imagen
-file = st.file_uploader("Sube una imagen", type=["jpg", "jpeg", "png"])
+uploaded_file = st.file_uploader("Elige una imagen", type=['jpg', 'jpeg', 'png'])
 
-if file is not None:
-    # Verificar si el archivo tiene el nombre adecuado
-    if file.name.endswith(('.jpg', '.jpeg', '.png')):
-        # Mostrar la imagen subida
-        st.image(file, caption="Imagen subida", use_column_width=True)
-
-        # Realizar la predicción
-        predicted_class, confidence = predict_image(file)
-
-        # Mostrar resultados si la predicción fue exitosa
-        if predicted_class and confidence:
-            st.write(f"**Clase Predicha:** {predicted_class}")
-            st.write(f"**Confianza:** {confidence:.2f}")
-    else:
-        st.error("Por favor, sube un archivo con una extensión válida (.jpg, .jpeg, .png).")
-else:
-    st.write("Por favor, sube una imagen para clasificarla.")
+if uploaded_file is not None:
+    # Mostrar la imagen subida
+    st.image(uploaded_file, caption="Imagen subida", use_column_width=True)
+    
+    # Realizar la predicción
+    with st.spinner('Clasificando...'):
+        class_name, confidence = predict_image(uploaded_file)
+    
+    # Mostrar la clase y la confianza
+    st.write(f"**Predicción:** {class_name}")
+    st.write(f"**Confianza:** {confidence:.2f}")
