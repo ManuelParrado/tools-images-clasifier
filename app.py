@@ -15,7 +15,7 @@ st.markdown("Sube una imagen y el modelo la clasificará como una de las siguien
 st.write(", ".join(classes))
 
 # Subida de imagen
-uploaded_file = st.file_uploader("Sube una imagen...", type=["jpg", "jpeg", "png"])
+uploaded_file = st.file_uploader("Sube una imagen...", type=[".jpg", ".jpeg", ".png", ".JPG"])
 
 if uploaded_file is not None:
     # Mostrar imagen
