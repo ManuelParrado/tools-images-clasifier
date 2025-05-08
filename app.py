@@ -5,7 +5,7 @@ import numpy as np
 import io
 
 # Cargar el modelo previamente entrenado
-model = load_model('images_clasifier.h5')
+model = load_model('serialized_model/images_clasifier.h5')
 
 # Definir las clases (estos deben coincidir con las clases del modelo)
 class_names = ['Alicates', 'Cuchillo', 'Cúter', 'Destornillador', 'Martillo', 'Tijeras']
